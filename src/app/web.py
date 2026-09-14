@@ -1,19 +1,23 @@
 import logging
-from . import app, label
-from flask import render_template, send_file, request, jsonify, send_from_directory
-from brother_ql.devicedependent import label_type_specs
 
+from brother_ql.labels import LabelsManager
+from flask import jsonify, render_template, request, send_file, send_from_directory
+
+from . import app, label
 
 logger = logging.getLogger(__name__)
+labels_manager = LabelsManager()
 
 @app.route('/')
 def root():
-    return render_template("main.jinja2",
-                           website=app.config['WEBSITE'],
-                           fonts=app.config['fonts'],
-                           margins=app.config['margins'],
-                           spacing=app.config['font_spacing'],
-                           labels=label_type_specs)
+    return render_template(
+        "main.jinja2",
+        website=app.config["WEBSITE"],
+        fonts=app.config["fonts"],
+        margins=app.config["margins"],
+        spacing=app.config["font_spacing"],
+        labels=labels_manager.elements,
+    )
 
 
 @app.errorhandler(404)

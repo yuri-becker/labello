@@ -1,52 +1,98 @@
-from PIL import Image, ImageDraw, ImageFont
-from brother_ql.devicedependent import label_type_specs, ENDLESS_LABEL, cuttingsupport, min_max_length_dots
-from brother_ql import BrotherQLRaster, create_label
-from brother_ql.backends import backend_factory
-from io import BytesIO
 import base64
-from . import font, backend, logger, config
-import qrcode
-from .halftone import halftone
+from io import BytesIO
+from math import floor
 from pprint import pprint
+from typing import Final, Literal, TypedDict, cast, final
 
+import qrcode
+from brother_ql import BrotherQLRaster
+from brother_ql.backends import BrotherQLBackendGeneric, backend_factory
+from brother_ql.brother_ql_create import create_label
+from brother_ql.labels import FormFactor, LabelsManager
+from brother_ql.labels import Label as LabelType
+from brother_ql.models import Model, ModelsManager
+from PIL import Image, ImageDraw, ImageFont
+
+from app.fonts import Fonts
+
+from . import backend, config, font, logger
+from .halftone import halftone
+
+labels_manager = LabelsManager()
 
 class Label:
-    def __init__(self, data, file=False):
+    @final
+    class Data(TypedDict):
+        label_size: str
+        orientation: Literal["rotated"] | None
+        margin_left: str | int
+        margin_right: str | int
+        margin_top: str | int
+        margin_bottom: str | int
+        font_size: str | int
+        font_name: str
+        font_spacing: float
+        qr_text: str
+        text: str
+        qr_align: Literal["center", "right"]
+        halign: Literal["center", "left", "right"]
+        valign: Literal["top", "middle", "bottom"]
+
+    data: Final[Data]
+    margin_left: Final[int]
+    margin_right: Final[int]
+    margin_top: Final[int]
+    margin_bottom: Final[int]
+    label_type: Final[LabelType]
+    rotated: Final[bool]
+    image: Image.Image
+    label: ImageDraw.ImageDraw
+    font: ImageFont.FreeTypeFont
+    font_path: Fonts.Font
+    width: float
+    height: float
+
+    def __init__(self, data: Data, file: bool = False):
         """ creates a new label with the given settings """
-        lts = label_type_specs
-        self.size = data['label_size']
-        logger.debug('Label size: {}'.format(lts[self.size]['dots_printable']))
-        self.width, self.height = lts[self.size]['dots_printable']
+        self.data = data
+        logger.debug(f"Trying to print {data}...")
+
+        label_type = cast(LabelType | None, labels_manager.get(data["label_size"]))
+        if label_type is None:
+            raise ValueError(
+                f"Label with identifier {data['label_size']} could not be found!"
+            )
+        self.label_type = label_type
+        logger.debug(f"Label size: {self.label_type.dots_printable}")
+        self.width = label_type.dots_printable[0]
+        self.height = label_type.dots_printable[1]
+
         if data['orientation'] == 'rotated':
             self.rotated = True
         else:
             self.rotated = False
 
-        self.data = data
-        logger.debug('margin_left: {}'.format(self.data["margin_left"]))
-        logger.debug('margin_right: {}'.format(self.data["margin_right"]))
-        logger.debug('margin_top: {}'.format(self.data["margin_top"]))
-        logger.debug('margin_bottom: {}'.format(self.data["margin_bottom"]))
         try:
-            self.data['margin_left'] = int(self.data['margin_left'])
+            self.margin_left = int(self.data["margin_left"])
         except ValueError:
-            self.data['margin_left'] = config['labels']['margin']['left']
+            self.margin_left = config["labels"]["margin"]["left"]
         try:
-            self.data['margin_right'] = int(self.data['margin_right'])
+            self.margin_right = int(self.data["margin_right"])
         except ValueError:
-            self.data['margin_right'] = config['labels']['margin']['right']
+            self.margin_right = config["labels"]["margin"]["right"]
         try:
-            self.data['margin_top'] = int(self.data['margin_top'])
+            self.margin_top = int(self.data["margin_top"])
         except ValueError:
-            self.data['margin_top'] = config['labels']['margin']['top']
+            self.margin_top = config["labels"]["margin"]["top"]
         try:
-            self.data['margin_bottom'] = int(self.data['margin_bottom'])
+            self.margin_bottom = int(self.data["margin_bottom"])
         except ValueError:
-            self.data['margin_bottom'] = config['labels']['margin']['bottom']
+            self.margin_bottom = config["labels"]["margin"]["bottom"]
 
-        self.image = Image.new('L', (self.width, self.height), 255)
+        self.image = Image.new("L", (self.width, self.height), 255)
+
         self.label = ImageDraw.Draw(self.image)
-        logger.debug('Rotated: {}'.format(self.rotated))
+        logger.debug(f"Rotated: {self.rotated}")
 
         if 'text' in self.data:
             try:
@@ -54,7 +100,6 @@ class Label:
             except ValueError:
                 self.data['font_spacing'] = config['font_spacing']
             self.font_path = font.fonts[data['font_name']]
-            self.font_size = data['font_size']
             self.font = ImageFont.truetype(font.fonts[data['font_name']]['path'], int(data['font_size']))
             self.text()
         if 'qr_text' in self.data:
@@ -68,7 +113,7 @@ class Label:
         img_buf.seek(0)
         return base64.b64encode(img_buf.getbuffer())
 
-    def scale(self, dim):
+    def scale(self, dim: tuple[int, int]):
         img_height, img_width = dim
 
         # set width and height
@@ -98,18 +143,18 @@ class Label:
 
         ret = (int(x), int(y))
 
-        logger.debug('Scaled image: {}'.format(ret))
+        logger.debug(f"Scaled image: {ret}")
 
         return ret
 
     def img(self, img):
         img = Image.open(img)
         logger.debug('Generating label from image.')
-        logger.debug('Data: {}'.format(self.data))
-        logger.debug('Image: {}'.format(img))
-        logger.debug('Image size: {}'.format(img.size))
+        logger.debug(f"Data: {self.data}")
+        logger.debug(f"Image: {img}")
+        logger.debug(f"Image size: {img.size}")
         imgsize = self.scale(img.size)
-        logger.debug('Scaled image size: {}'.format(imgsize))
+        logger.debug(f"Scaled image size: {imgsize}")
 
         # resize label
         rot_img = False
@@ -128,10 +173,10 @@ class Label:
                 x = self.width
                 y = self.height
 
-        self.image = Image.new('L', (x, y), 255)
+        self.image = Image.new("L", (floor(x), floor(y)), 255)
 
-        logger.debug('Label dimensions: {}, {}'.format(x, y))
-        logger.debug('Scaled dimensions: {}'.format(imgsize))
+        logger.debug(f"Label dimensions: {x}, {y}")
+        logger.debug(f"Scaled dimensions: {imgsize}")
 
         self.label = ImageDraw.Draw(self.image)
 
@@ -155,11 +200,10 @@ class Label:
 
         qr.add_data(self.data['qr_text'])
         qr.make()
-        qrimage = qr.make_image(fill_color="black", back_color="white")
-
+        qrimage = qr.make_image(fill_color="black", back_color="white").get_image()
         qrsize = self.scale(qrimage.size)
 
-        logger.debug('QR Size: {}'.format(qrsize))
+        logger.debug(f"QR Size: {qrsize}")
 
         # resize label
         if self.height == 0:
@@ -177,10 +221,10 @@ class Label:
                 x = self.width
                 y = self.height
 
-        self.image = Image.new('L', (x, y), 255)
+        self.image = Image.new("L", (floor(x), floor(y)), 255)
         self.label = ImageDraw.Draw(self.image)
-        logger.debug('Label dimensions: {}, {}'.format(x, y))
-        logger.debug('Scaled dimensions: {}'.format(qrsize))
+        logger.debug(f"Label dimensions: {x}, {y}")
+        logger.debug(f"Scaled dimensions: {qrsize}")
         qrimage = qrimage.resize(qrsize)
 
         pastex = 0
@@ -193,62 +237,78 @@ class Label:
         #self.label.text((0, 0), self.data['qr_text'], 0)
 
     def text(self):
-        x, y = self.label.multiline_textsize(self.data['text'], font=self.font, spacing=self.data['font_spacing'])
-
+        bbox = self.label.multiline_textbbox(
+            (0, 0), self.data["text"], font=self.font, spacing=self.data["font_spacing"]
+        )
+        x = bbox[2] - bbox[0]
+        y = bbox[3] - bbox[1]
         # resize label
         if self.height == 0:
             if self.rotated:
                 self.height = self.width
-                self.width = x + self.data['margin_left'] + self.data['margin_right']
+                self.width = x + self.margin_left + self.margin_right
             else:
-                self.height = y + self.data['margin_top'] + self.data['margin_bottom']
+                self.height = y + self.margin_top + self.margin_bottom
         elif self.rotated:
-            self.height, self.width = label_type_specs[self.size]['dots_printable']
-        self.image = Image.new('L', (self.width, self.height), 255)
+            self.height, self.width = self.label_type.dots_printable
+        self.image = Image.new("L", (floor(self.width), floor(self.height)), 255)
         self.label = ImageDraw.Draw(self.image)
 
         # horizontal alignment
         if self.data['halign'] == "center":
             x = int(self.width/2) - int(x / 2)
         elif self.data['halign'] == "left":
-            x = 0 + self.data['margin_left']
+            x = self.margin_left
         elif self.data['halign'] == "right":
-            x = self.width - (x + self.data['margin_right'])
+            x = self.width - (x + self.margin_right)
 
         # vertical alignment
         if self.data['valign'] == "middle":
             y = int(self.height / 2) - int(y / 2)
         elif self.data['valign'] == "top":
-            y = 0 + self.data['margin_top']
+            y = 0 + self.margin_top
         elif self.data['valign'] == "bottom":
-            y = self.height - (y + self.data['margin_bottom'])
+            y = self.height - (y + self.margin_bottom)
         self.label.multiline_text(
-            (x, y), self.data['text'], 0, font=self.font, align=self.data['halign'], spacing=self.data['font_spacing'])
+            (x, y),
+            self.data["text"],
+            0,
+            font=self.font,
+            align=self.data["halign"],
+            spacing=self.data["font_spacing"],
+        )
 
     def draw(self):
         return self.convert_to_png()
 
     def prt(self):
-        print(label_type_specs[self.size])
-        if label_type_specs[self.size]['kind'] == ENDLESS_LABEL:
+        logger.debug(f"Printing {self.label_type}")
+        if self.label_type.form_factor == FormFactor.ENDLESS:
             rot = 0 if not self.rotated else 90
         else:
             rot = 'auto'
 
-        if label_type_specs[self.size]['kind'] != 2:
-            label_type_specs[self.size]['feed_margin'] = config['label']['feed_margin']
+        model = cast(Model | None, ModelsManager().get(config["printer"]["model"]))
+        if model is None:
+            raise ValueError(f"Model {config['printer']['model']} is not supported!")
 
-        qlr = BrotherQLRaster(config['printer']['model'])
-        if config['printer']['model'] in cuttingsupport:
+        qlr = BrotherQLRaster(model.identifier)
+        if model.cutting:
             logger.debug('Printer is capable of automatic cutting.')
-            cutting = True
         else:
             logger.debug('Printer is not capable of automatic cutting.')
-            cutting = False
-        create_label(qlr, self.image, self.size,
-                     threshold=30, cut=cutting, rotate=rot)
+        create_label(
+            qlr,
+            self.image,
+            self.data["label_size"],
+            threshold=30,
+            cut=model.cutting,
+            rotate=rot,
+        )
         try:
-            backend_class = backend_factory(backend)['backend_class']
+            backend_class = cast(
+                type[BrotherQLBackendGeneric], backend_factory(backend)["backend_class"]
+            )
             be = backend_class(config['printer']['device'])
             pprint(vars(be))
             be.write(qlr.data)
@@ -258,5 +318,6 @@ class Label:
             return "alert-success", "<b>Success:</b>Label printed"
         except Exception as e:
             logger.warning("unable tp print")
-            logger.warning(e)
+            logger.warning(e, exc_info=True)
             return "danger", "unable to print"
+

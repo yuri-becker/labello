@@ -1,7 +1,7 @@
 from PIL import Image, ImageDraw, ImageStat
 
 
-def halftone(img, sample, scale, angle=45):
+def halftone(img: Image.Image, sample, scale, angle=45):
     img_grey = img.convert('L')
     channel = img_grey.split()[0]
     channel = channel.rotate(angle, expand=1)
