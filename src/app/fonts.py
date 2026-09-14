@@ -1,12 +1,19 @@
 import subprocess
 import sys
+from typing import TypedDict
 
 
 class Fonts:
+    class Font(TypedDict):
+        path: str
+        styles: str
+
+    fonts: dict[str, Font]
+
     def __init__(self):
         self.fonts = {}
 
-    def get_fonts(self, raw):
+    def get_fonts(self, raw: subprocess.CompletedProcess[bytes]):
         """ adds the found fonts the the fonts list
         :param raw: command to be run to get the raw font list from the system
         :return: true if fonts were added false if not

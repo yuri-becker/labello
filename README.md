@@ -58,3 +58,4 @@ There are some settings to alter the behavior and appearance of labello. In case
 * QL-1050 
 * QL-1060N
 
+Additionally, your printer might work if it is listed as compatible with the [underlying library](https://pypi.org/project/brother-ql-next/).

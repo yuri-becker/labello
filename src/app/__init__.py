@@ -91,12 +91,12 @@ font = fonts.Fonts()
 for folder in config['fonts']:
     font.add_fonts(folder)
 app.config['fonts'] = font.fontlist()
-logger.debug(app.config['fonts'])
+logger.debug(f"Detected Fonts {app.config['fonts']}")
 
 # setting up printer
 try:
     backend = guess_backend(config['printer']['device'])
-    logger.info(backend)
+    logger.info(f"Using Backend {backend}")
 except ValueError:
     logger.error('Unable to select the proper backend. Check your config')
     sys.exit(20)
