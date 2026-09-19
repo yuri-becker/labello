@@ -1,9 +1,8 @@
-FROM python:3.10-slim AS base_image
+FROM python:3.14-slim AS base_image
 
 ENV PIP_NO_CACHE_DIR=off \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
     PIP_DEFAULT_TIMEOUT=100 \
-    POETRY_VERSION=1.1.13 \
     POETRY_HOME="/opt/poetry" \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
     POETRY_NO_INTERACTION=1 \
@@ -12,19 +11,17 @@ ENV PIP_NO_CACHE_DIR=off \
 ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
 
 FROM base_image AS builder
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    yarnpkg curl build-essential && \
-    curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+RUN apt update && \
+    apt install -y --no-install-recommends yarnpkg build-essential python3-poetry
 WORKDIR $PYSETUP_PATH
 COPY poetry.lock pyproject.toml ./
 COPY src/package.json src/yarn.lock ./
-RUN poetry install --no-dev && \
+RUN poetry install && \
     yarnpkg install 
 
 FROM base_image as production
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y fontconfig gettext curl
+RUN apt update && \
+    apt-get install -y fontconfig gettext curl
 COPY --from=builder $PYSETUP_PATH $PYSETUP_PATH
 COPY ./src /labello/
 COPY --from=builder $PYSETUP_PATH/node_modules /labello/node_modules

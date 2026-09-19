@@ -5,6 +5,7 @@ description = "A webinterface to print labels"
 authors = ["telegnom <max@telegnom.org>"]
 license = "MIT"
 include = ["labello/*", "labello/node_modules/@mdi/font/*"]
+package-mode = false
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
