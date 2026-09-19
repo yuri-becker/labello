@@ -13,9 +13,9 @@ from brother_ql.labels import Label as LabelType
 from brother_ql.models import Model, ModelsManager
 from PIL import Image, ImageDraw, ImageFont
 
-from app.fonts import Fonts
+from app.fonts import Font, fonts
 
-from . import backend, config, font, logger
+from . import backend, config, logger
 from .halftone import halftone
 
 labels_manager = LabelsManager()
@@ -48,7 +48,7 @@ class Label:
     image: Image.Image
     label: ImageDraw.ImageDraw
     font: ImageFont.FreeTypeFont
-    font_path: Fonts.Font
+    font_path: Font
     width: float
     height: float
 
@@ -75,19 +75,19 @@ class Label:
         try:
             self.margin_left = int(self.data["margin_left"])
         except ValueError:
-            self.margin_left = config["label"]["margins"]["left"]
+            self.margin_left = config.label.margins["left"]
         try:
             self.margin_right = int(self.data["margin_right"])
         except ValueError:
-            self.margin_right = config["label"]["margins"]["right"]
+            self.margin_right = config.label.margins["right"]
         try:
             self.margin_top = int(self.data["margin_top"])
         except ValueError:
-            self.margin_top = config["label"]["margins"]["top"]
+            self.margin_top = config.label.margins["top"]
         try:
             self.margin_bottom = int(self.data["margin_bottom"])
         except ValueError:
-            self.margin_bottom = config["label"]["margins"]["bottom"]
+            self.margin_bottom = config.label.margins["bottom"]
 
         self.image = Image.new("L", (self.width, self.height), 255)
 
@@ -98,9 +98,9 @@ class Label:
             try:
                 self.data['font_spacing'] = int(self.data['font_spacing'])
             except ValueError:
-                self.data["font_spacing"] = config["label"]["font_spacing"]
-            self.font_path = font.fonts[data['font_name']]
-            self.font = ImageFont.truetype(font.fonts[data['font_name']]['path'], int(data['font_size']))
+                self.data["font_spacing"] = config.label.font_spacing
+            font = fonts.font(data["font_name"])
+            self.font = ImageFont.truetype(font["path"], int(data["font_size"]))
             self.text()
         if 'qr_text' in self.data:
             self.qr()
@@ -227,12 +227,12 @@ class Label:
         logger.debug(f"Scaled dimensions: {qrsize}")
         qrimage = qrimage.resize(qrsize)
 
-        pastex = 0
-        pastey = 0
+        pastex: int = 0
+        pastey: int = 0
         if self.data['qr_align'] == 'center':
             pastex = int((x - qrsize[0]) / 2)
         elif self.data['qr_align'] == 'right':
-            pastex = x - qrsize[0]
+            pastex = int(x - qrsize[0])
         self.image.paste(qrimage, (pastex, pastey))
         #self.label.text((0, 0), self.data['qr_text'], 0)
 
@@ -288,9 +288,9 @@ class Label:
         else:
             rot = 'auto'
 
-        model = cast(Model | None, ModelsManager().get(config["printer"]["model"]))
+        model = cast(Model | None, ModelsManager().get(config.printer["model"]))
         if model is None:
-            raise ValueError(f"Model {config['printer']['model']} is not supported!")
+            raise ValueError(f"Model {config.printer['model']} is not supported!")
 
         qlr = BrotherQLRaster(model.identifier)
         if model.cutting:
@@ -309,7 +309,7 @@ class Label:
             backend_class = cast(
                 type[BrotherQLBackendGeneric], backend_factory(backend)["backend_class"]
             )
-            be = backend_class(config['printer']['device'])
+            be = backend_class(config.printer["device"])
             pprint(vars(be))
             be.write(qlr.data)
             be.dispose()
@@ -317,7 +317,7 @@ class Label:
             # TODO better feedback from printer
             return "alert-success", "<b>Success:</b>Label printed"
         except Exception as e:
-            logger.warning("unable tp print")
+            logger.warning("unable to print")
             logger.warning(e, exc_info=True)
             return "danger", "unable to print"
 
