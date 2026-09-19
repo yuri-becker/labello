@@ -75,19 +75,19 @@ class Label:
         try:
             self.margin_left = int(self.data["margin_left"])
         except ValueError:
-            self.margin_left = config["labels"]["margin"]["left"]
+            self.margin_left = config["label"]["margins"]["left"]
         try:
             self.margin_right = int(self.data["margin_right"])
         except ValueError:
-            self.margin_right = config["labels"]["margin"]["right"]
+            self.margin_right = config["label"]["margins"]["right"]
         try:
             self.margin_top = int(self.data["margin_top"])
         except ValueError:
-            self.margin_top = config["labels"]["margin"]["top"]
+            self.margin_top = config["label"]["margins"]["top"]
         try:
             self.margin_bottom = int(self.data["margin_bottom"])
         except ValueError:
-            self.margin_bottom = config["labels"]["margin"]["bottom"]
+            self.margin_bottom = config["label"]["margins"]["bottom"]
 
         self.image = Image.new("L", (self.width, self.height), 255)
 
@@ -98,7 +98,7 @@ class Label:
             try:
                 self.data['font_spacing'] = int(self.data['font_spacing'])
             except ValueError:
-                self.data['font_spacing'] = config['font_spacing']
+                self.data["font_spacing"] = config["label"]["font_spacing"]
             self.font_path = font.fonts[data['font_name']]
             self.font = ImageFont.truetype(font.fonts[data['font_name']]['path'], int(data['font_size']))
             self.text()

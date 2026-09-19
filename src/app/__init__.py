@@ -1,26 +1,16 @@
+import logging
+import os.path
+import sys
+
+from brother_ql.backends import guess_backend
 from flask import Flask
 from flask_bootstrap import Bootstrap
-import yaml
-import logging
-import sys
-import os.path
+
+from app.config import load_config
+
 from . import fonts
-from brother_ql.backends import backend_factory, guess_backend
 
-local_config_path = os.path.dirname(os.path.abspath(__file__)).split(os.path.sep)[:-1]
-local_config_path.append("config.local.yaml")
-local_config_path = os.path.sep.join(local_config_path)
-config_path = os.path.dirname(os.path.abspath(__file__)).split(os.path.sep)[:-1]
-config_path.append("config.yaml")
-config_path = os.path.sep.join(config_path)
-
-try:
-    with open(local_config_path, 'r') as fh:
-        config = yaml.safe_load(fh)
-
-except FileNotFoundError:
-    with open(config_path, 'r') as fh:
-        config = yaml.safe_load(fh)
+config = load_config()
 
 # LOGGING
 logger = logging.getLogger('labello')
