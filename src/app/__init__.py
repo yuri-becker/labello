@@ -12,7 +12,7 @@ from app.logger import logger
 app = Flask(__name__)
 app.config.update(
     DEBUG=config.logging.level == 10,
-    BOOTSTRAP_SERVE_LOCAL=config.website.get("bootstrap_local", True),
+    BOOTSTRAP_SERVE_LOCAL=config.website.bootstrap_local,
     DEFAULT_PARSERS=[
         "flask.ext.api.parsers.JSONParser",
         "flask.ext.api.parsers.URLEncodedParser",
