@@ -4,48 +4,6 @@ from typing import Final, NotRequired, ReadOnly, TypedDict
 import yaml
 
 
-class ServerDict(TypedDict):
-    port: ReadOnly[NotRequired[int]]
-    host: ReadOnly[NotRequired[str]]
-
-
-class Server:
-    dict: Final[ServerDict]
-
-    def __init__(self, dict: ServerDict) -> None:
-        self.dict = dict
-
-    @property
-    def port(self):
-        return self.dict.get("port", 5000)
-
-    @property
-    def host(self):
-        return self.dict.get("host", "::1")
-
-
-class LoggingDict(TypedDict):
-    level: ReadOnly[NotRequired[int]]
-
-
-class Logging:
-    dict: Final[LoggingDict]
-
-    def __init__(self, dict: LoggingDict) -> None:
-        self.dict = dict
-
-    @property
-    def level(self) -> int:
-        return self.dict.get("level", 20)
-
-
-class Website(TypedDict):
-    html_title: ReadOnly[str]
-    title: ReadOnly[str]
-    slug: ReadOnly[str]
-    bootstrap_local: ReadOnly[NotRequired[bool]]
-
-
 class Margins(TypedDict):
     top: ReadOnly[int]
     bottom: ReadOnly[int]
@@ -55,8 +13,50 @@ class Margins(TypedDict):
 
 class LabelDict(TypedDict):
     margins: ReadOnly[NotRequired[Margins]]
-    feed_margin: ReadOnly[int]
+    """Defaults to 24 in all dimensions."""
+    feed_margin: ReadOnly[NotRequired[int]]
+    """Defaults to 16. Setting to below 15 is not recommended."""
     font_spacing: ReadOnly[NotRequired[int]]
+    """Defaults to 13."""
+
+
+class LoggingDict(TypedDict):
+    level: ReadOnly[NotRequired[int]]
+    """10=debug, 20=info, 30=warning, 40=error, 50=critical. Defaults to 30"""
+
+
+class PrinterDict(TypedDict):
+    device: ReadOnly[str]
+    model: ReadOnly[str]
+
+
+class ServerDict(TypedDict):
+    port: ReadOnly[NotRequired[int]]
+    """Defaults to 4242"""
+    host: ReadOnly[NotRequired[str]]
+    """Defaults to 0.0.0.0"""
+
+
+class WebsiteDict(TypedDict):
+    html_title: ReadOnly[NotRequired[str]]
+    """Defaults to 'labello - label printer'"""
+    title: ReadOnly[NotRequired[str]]
+    """Defaults to labello"""
+    slug: ReadOnly[NotRequired[str]]
+    """Defaults to 'print all your labels'"""
+    bootstrap_local: ReadOnly[NotRequired[bool]]
+    """Whether labello should serve bootstrap itself (true) or from Bootstrap's CDN (false). Defaults to true."""
+
+
+class ConfigDict(TypedDict):
+    fonts: ReadOnly[NotRequired[list[str]]]
+    """Defaults to '/opt/labello/download_font' and '/opt/labello/fonts'"""
+    label: ReadOnly[NotRequired[LabelDict]]
+    logging: ReadOnly[NotRequired[LoggingDict]]
+    printer: ReadOnly[NotRequired[PrinterDict]]
+    """Defaults to a QL-500 on /dev/usb/lp0"""
+    server: ReadOnly[NotRequired[ServerDict]]
+    website: ReadOnly[NotRequired[WebsiteDict]]
 
 
 class Label:
@@ -71,29 +71,72 @@ class Label:
 
     @property
     def feed_margin(self):
-        return self.dict["feed_margin"]
+        return self.dict.get("feed_margin", 16)
 
     @property
     def font_spacing(self):
         return self.dict.get("font_spacing", 13)
 
 
-class Printer(TypedDict):
-    device: ReadOnly[str]
-    model: ReadOnly[str]
+class Logging:
+    dict: Final[LoggingDict]
+
+    def __init__(self, dict: LoggingDict) -> None:
+        self.dict = dict
+
+    @property
+    def level(self) -> int:
+        return self.dict.get("level", 30)
+
+    def is_debug(self):
+        return self.level == 10
 
 
-class ConfigDict(TypedDict):
-    server: NotRequired[ReadOnly[ServerDict]]
-    logging: ReadOnly[LoggingDict]
-    website: ReadOnly[Website]
-    label: ReadOnly[LabelDict]
-    printer: ReadOnly[Printer]
-    fonts: ReadOnly[list[str]]
+class Server:
+    dict: Final[ServerDict]
+
+    def __init__(self, dict: ServerDict) -> None:
+        self.dict = dict
+
+    @property
+    def port(self):
+        return self.dict.get("port", 4242)
+
+    @property
+    def host(self):
+        return self.dict.get("host", "0.0.0.0")
+
+
+class Website:
+    dict: Final[WebsiteDict]
+
+    def __init__(self, dict: WebsiteDict) -> None:
+        self.dict = dict
+
+    @property
+    def html_title(self):
+        return self.dict.get("html_title", "labello - label printer")
+
+    @property
+    def title(self):
+        return self.dict.get("title", "labello")
+
+    @property
+    def slug(self):
+        return self.dict.get("slug", "print all your labels")
+
+    @property
+    def bootstrap_local(self):
+        return self.dict.get("bootstrap_local", True)
 
 
 class Config:
-    dict: Final[ConfigDict]
+    fonts: Final[list[str]]
+    label: Final[Label]
+    logging: Final[Logging]
+    printer: Final[PrinterDict]
+    server: Final[Server]
+    website: Final[Website]
 
     def __init__(self) -> None:
         local_config_path = os.path.dirname(os.path.abspath(__file__)).split(
@@ -101,39 +144,24 @@ class Config:
         )[:-1]
         local_config_path.append("config.local.yaml")
         local_config_path = os.path.sep.join(local_config_path)
-        config_path = os.path.dirname(os.path.abspath(__file__)).split(os.path.sep)[:-1]
-        config_path.append("config.yaml")
-        config_path = os.path.sep.join(config_path)
+
+        dict: ConfigDict
         try:
             with open(local_config_path, "r") as fh:
-                self.dict = yaml.safe_load(fh)
+                dict = yaml.safe_load(fh)
         except FileNotFoundError:
-            with open(config_path, "r") as fh:
-                self.dict = yaml.safe_load(fh)
+            dict = ConfigDict()
 
-    @property
-    def fonts(self):
-        return self.dict["fonts"]
-
-    @property
-    def logging(self) -> Logging:
-        return Logging(self.dict["logging"])
-
-    @property
-    def label(self) -> Label:
-        return Label(self.dict["label"])
-
-    @property
-    def printer(self) -> Printer:
-        return self.dict["printer"]
-
-    @property
-    def server(self) -> Server:
-        return Server(self.dict.get("server", ServerDict()))
-
-    @property
-    def website(self) -> Website:
-        return self.dict["website"]
+        self.fonts = dict.get(
+            "fonts", ["/opt/labello/download_font", "/opt/labello/fonts"]
+        )
+        self.label = Label(dict.get("label", LabelDict()))
+        self.printer = dict.get(
+            "printer", PrinterDict(device="/dev/usb/lp0", model="QL-500")
+        )
+        self.logging = Logging(dict.get("logging", LoggingDict()))
+        self.server = Server(dict.get("server", ServerDict()))
+        self.website = Website(dict.get("website", WebsiteDict()))
 
 
 config = Config()
