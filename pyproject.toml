@@ -6,7 +6,7 @@ authors = ["telegnom <max@telegnom.org>"]
 license = "MIT"
 include = ["labello/*", "labello/node_modules/@mdi/font/*"]
 
-[tool.poetry.dependencies]
+[dependencies]
 python = ">=3.10,<4.0"
 Flask = "^3.1.3"
 Pillow = "^12.3.0"
