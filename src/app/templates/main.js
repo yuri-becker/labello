@@ -113,23 +113,21 @@ function get_data_text() {
 
     // create json data object
 
-    var label_data = {
-        text: text,
-        font_name: font_family,
-        font_size: font_size,
-        valign: valign,
-        halign: halign,
-        underline: underline,
-        label_size: label_size,
-        orientation: orientation,
-        margin_left: margin_left,
-        margin_right: margin_right,
-        margin_top: margin_top,
-        margin_bottom: margin_bottom,
-        font_spacing: font_spacing,
-    };
-
-    return label_data;
+    const formdata = new FormData();
+    formdata.append("text", text);
+    formdata.append("font_name", font_family);
+    formdata.append("font_size", font_size);
+    formdata.append("valign", valign);
+    formdata.append("halign", halign);
+    formdata.append("underline", underline);
+    formdata.append("label_size", label_size);
+    formdata.append("orientation", orientation);
+    formdata.append("margin_left", margin_left);
+    formdata.append("margin_right", margin_right);
+    formdata.append("margin_top", margin_top);
+    formdata.append("margin_bottom", margin_bottom);
+    formdata.append("font_spacing", font_spacing);
+    return formdata
 }
 
 function get_data_qrcode() {
@@ -191,26 +189,22 @@ function get_data_image() {
 
 function preview() {
     if(saveTimeout) clearTimeout(saveTimeout);
-    saveTimeout = setTimeout(function() {
-        if (get_mode() === "text") {
-            $.ajax({
-                contentType: 'application/json; charset=UTF-8', type: "post", url: "/preview",
-                data: JSON.stringify(get_data_text()),
-                success: function (result) {
-                    $('#preview').attr('src', 'data:image/png;base64,' + result);
-                }
-            });
-        }
+    saveTimeout = setTimeout(() => {
+        const mode = get_mode();
+        const data = mode === "text" ? get_data_text() : get_data_qrcode();
+        $.ajax({
+            // jquery needs these two settings when passing in a FormData instance
+            processData: false,
+            contentType: false,
+            type: "post",
+            url: "/preview",
+            data,
+            success: (result) => {
+                $("#preview").attr("src", `data:image/png;base64,${result}`);
+            },
+        });
 
-        if (get_mode() === "qrcode") {
-            $.ajax({
-                contentType: 'application/json; charset=UTF-8', type: "post", url: "/preview/qrcode",
-                data: JSON.stringify(get_data_qrcode()),
-                success: function (result) {
-                    $('#preview').attr('src', 'data:image/png;base64,' + result);
-                }
-            });
-        }
+
         if (get_mode() === "image") {
             $.ajax({
                 enctype: 'multipart/form-data',
@@ -235,6 +229,7 @@ function printLabel() {
             contentType: 'application/json; charset=UTF-8', type: "post", url: "/print/text",
             data: JSON.stringify(get_data_text()),
             success: function (result) {
+                if ("")
                 $('#status').html(result[1]).removeClass("alert-info alert-danger alert-warning alert-success alert-secondary").addClass(result[0]);
             },
             error: function (result) {

@@ -1,8 +1,9 @@
 import base64
+from enum import Enum
 from io import BytesIO
 from math import floor
 from pprint import pprint
-from typing import Final, Literal, TypedDict, cast, final
+from typing import Final, cast
 
 import qrcode
 from brother_ql import BrotherQLRaster
@@ -14,6 +15,7 @@ from brother_ql.models import Model, ModelsManager
 from PIL import Image, ImageDraw, ImageFont
 
 from app.fonts import Font, fonts
+from app.request import Request
 
 from . import backend, config, logger
 from .halftone import halftone
@@ -21,24 +23,7 @@ from .halftone import halftone
 labels_manager = LabelsManager()
 
 class Label:
-    @final
-    class Data(TypedDict):
-        label_size: str
-        orientation: Literal["rotated"] | None
-        margin_left: str | int
-        margin_right: str | int
-        margin_top: str | int
-        margin_bottom: str | int
-        font_size: str | int
-        font_name: str
-        font_spacing: float
-        qr_text: str
-        text: str
-        qr_align: Literal["center", "right"]
-        halign: Literal["center", "left", "right"]
-        valign: Literal["top", "middle", "bottom"]
-
-    data: Final[Data]
+    data: Final[Request]
     margin_left: Final[int]
     margin_right: Final[int]
     margin_top: Final[int]
@@ -51,8 +36,9 @@ class Label:
     font_path: Font
     width: float
     height: float
+    font_spacing: int
 
-    def __init__(self, data: Data, file: bool = False):
+    def __init__(self, data: Request, file: bool = False):
         """ creates a new label with the given settings """
         self.data = data
         logger.debug(f"Trying to print {data}...")
@@ -96,9 +82,10 @@ class Label:
 
         if 'text' in self.data:
             try:
-                self.data['font_spacing'] = int(self.data['font_spacing'])
+                self.font_spacing = int(self.data["font_spacing"])
             except ValueError:
-                self.data["font_spacing"] = config.label.font_spacing
+                self.font_spacing = config.label.font_spacing
+
             font = fonts.font(data["font_name"])
             self.font = ImageFont.truetype(font["path"], int(data["font_size"]))
             self.text()
@@ -281,16 +268,16 @@ class Label:
     def draw(self):
         return self.convert_to_png()
 
-    def prt(self):
+    def print(self) -> None:
         logger.debug(f"Printing {self.label_type}")
         if self.label_type.form_factor == FormFactor.ENDLESS:
             rot = 0 if not self.rotated else 90
         else:
             rot = 'auto'
 
-        model = cast(Model | None, ModelsManager().get(config.printer["model"]))
+        model = cast(Model | None, ModelsManager().get(config.printer.model))
         if model is None:
-            raise ValueError(f"Model {config.printer['model']} is not supported!")
+            raise ValueError(f"Model {config.printer.model} is not supported!")
 
         qlr = BrotherQLRaster(model.identifier)
         if model.cutting:
@@ -309,15 +296,16 @@ class Label:
             backend_class = cast(
                 type[BrotherQLBackendGeneric], backend_factory(backend)["backend_class"]
             )
-            be = backend_class(config.printer["device"])
+            be = backend_class(config.printer.device)
             pprint(vars(be))
             be.write(qlr.data)
             be.dispose()
             del be
-            # TODO better feedback from printer
+            return
             return "alert-success", "<b>Success:</b>Label printed"
         except Exception as e:
             logger.warning("unable to print")
             logger.warning(e, exc_info=True)
+            raise
             return "danger", "unable to print"
 

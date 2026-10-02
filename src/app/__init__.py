@@ -29,7 +29,7 @@ bootstrap = Bootstrap(app)
 
 # setting up printer
 try:
-    backend = guess_backend(config.printer["device"])
+    backend = guess_backend(config.printer.device)
     logger.info(f"Using Backend {backend}")
 except ValueError:
     logger.error("Unable to select the proper backend. Check your config")
