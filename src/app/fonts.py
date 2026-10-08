@@ -51,7 +51,7 @@ class Fonts:
         """
         command = ["fc-list"]
         try:
-            raw = subprocess.run(command, stdout=subprocess.PIPE)
+            raw = subprocess.run(command, check=False, stdout=subprocess.PIPE)
         except FileNotFoundError:
             logger.fatal("fc-list not found")
             sys.exit(2)
@@ -64,7 +64,7 @@ class Fonts:
         """
         cmd = ["fc-scan", "--format", "%{file}:%{family}:style=%{style}\n", folder]
         try:
-            raw = subprocess.run(cmd, stdout=subprocess.PIPE)
+            raw = subprocess.run(cmd, check=False, stdout=subprocess.PIPE)
         except FileNotFoundError:
             logger.fatal("fc-list not found")
             sys.exit(2)

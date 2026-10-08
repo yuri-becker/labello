@@ -1,5 +1,4 @@
 import base64
-from enum import Enum
 from io import BytesIO
 from math import floor
 from pprint import pprint
@@ -144,7 +143,6 @@ class Label:
         logger.debug(f"Scaled image size: {imgsize}")
 
         # resize label
-        rot_img = False
         if self.height == 0:
             if self.rotated:
                 x = self.width

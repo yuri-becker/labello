@@ -24,10 +24,7 @@ node_path = os.path.dirname(os.path.abspath(__file__)).split(os.path.sep)[:-1]
 node_path.append("node_modules")
 app.config["node_path"] = os.path.sep.join(node_path)
 
-# initialize bootstrap
 bootstrap = Bootstrap(app)
-
-# setting up printer
 try:
     backend = guess_backend(config.printer.device)
     logger.info(f"Using Backend {backend}")

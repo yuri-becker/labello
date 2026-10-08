@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import Any, Final, ReadOnly, TypedDict
 
 import yaml
@@ -11,12 +12,14 @@ class Margins(TypedDict):
     left: ReadOnly[int]
     right: ReadOnly[int]
 
+
 @dataclass(frozen=True)
 class Label:
     margins: Margins = Margins(top=24, bottom=24, left=24, right=24)
     feed_margin: int = 16
     """Setting to below 15 is not recommended."""
     font_spacing: int = 13
+
 
 @dataclass(frozen=True)
 class Logging:
@@ -58,17 +61,14 @@ class Config:
     website: Final[Website]
 
     def __init__(self) -> None:
-        local_config_path = os.path.dirname(os.path.abspath(__file__)).split(
-            os.path.sep
-        )[:-1]
-        local_config_path.append("config.local.yaml")
-        local_config_path = os.path.sep.join(local_config_path)
+        config_path: str = os.getenv("LABELLO_CONFIG", self._default_config_path())
 
         dict: dict[str, Any]
         try:
-            with open(local_config_path, "r") as fh:
+            with open(config_path, "r") as fh:
                 dict = yaml.safe_load(fh)
         except FileNotFoundError:
+            print(f"Could not find a config file at {config_path}", file=sys.stderr)
             dict = {}
 
         self.fonts = dict.get(
@@ -79,6 +79,12 @@ class Config:
         self.logging = Logging(**dict.get("logging", {}))
         self.server = Server(**dict.get("server", {}))
         self.website = Website(**dict.get("website", {}))
+
+    def _default_config_path(self):
+        path = os.path.dirname(os.path.abspath(__file__)).split(os.path.sep)[:-1]
+        path.append("config.local.yaml")
+        path = os.path.sep.join(path)
+        return path
 
 
 config = Config()

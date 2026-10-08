@@ -56,10 +56,11 @@ def preview_image():
 def print():
     try:
         Label(
-            cast(Request, request.get_json(True)), cast(bool, request.files["file"])
+            cast(Request, request.form.to_dict()), cast(bool, "file" in request.files)
         ).print()
         return "Created", 201
     except Exception:
+        logger.exception("")
         return "", 500
 
 
