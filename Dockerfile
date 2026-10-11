@@ -15,7 +15,7 @@ RUN apt update && \
     apt install -y --no-install-recommends yarnpkg build-essential python3-poetry
 WORKDIR $PYSETUP_PATH
 COPY poetry.lock pyproject.toml ./
-COPY src/package.json src/yarn.lock ./
+COPY labello/package.json labello/yarn.lock ./
 RUN poetry install && \
     yarnpkg install 
 
@@ -23,7 +23,7 @@ FROM base_image as production
 RUN apt update && \
     apt-get install -y fontconfig gettext curl
 COPY --from=builder $PYSETUP_PATH $PYSETUP_PATH
-COPY ./src /labello/
+COPY ./labello /labello/
 COPY --from=builder $PYSETUP_PATH/node_modules /labello/node_modules
 
 ENV LAB_SERVER_PORT=4242 \

@@ -5,8 +5,8 @@ from brother_ql.backends import guess_backend
 from flask import Flask
 from flask_bootstrap import Bootstrap
 
-from app.config import config
-from app.logger import logger
+from labello.config import config
+from labello.logger import logger
 
 # initialize flask app
 app = Flask(__name__)

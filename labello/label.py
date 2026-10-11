@@ -13,13 +13,14 @@ from brother_ql.labels import Label as LabelType
 from brother_ql.models import Model, ModelsManager
 from PIL import Image, ImageDraw, ImageFont
 
-from app.fonts import Font, fonts
-from app.request import Request
+from labello.fonts import Font, fonts
+from labello.request import Request
 
 from . import backend, config, logger
 from .halftone import halftone
 
 labels_manager = LabelsManager()
+
 
 class Label:
     data: Final[Request]
@@ -38,7 +39,7 @@ class Label:
     font_spacing: int
 
     def __init__(self, data: Request, file: bool = False):
-        """ creates a new label with the given settings """
+        """creates a new label with the given settings"""
         self.data = data
         logger.debug(f"Trying to print {data}...")
 
@@ -52,7 +53,7 @@ class Label:
         self.width = label_type.dots_printable[0]
         self.height = label_type.dots_printable[1]
 
-        if data['orientation'] == 'rotated':
+        if data["orientation"] == "rotated":
             self.rotated = True
         else:
             self.rotated = False
@@ -79,7 +80,7 @@ class Label:
         self.label = ImageDraw.Draw(self.image)
         logger.debug(f"Rotated: {self.rotated}")
 
-        if 'text' in self.data:
+        if "text" in self.data:
             try:
                 self.font_spacing = int(self.data["font_spacing"])
             except ValueError:
@@ -88,7 +89,7 @@ class Label:
             font = fonts.font(data["font_name"])
             self.font = ImageFont.truetype(font["path"], int(data["font_size"]))
             self.text()
-        if 'qr_text' in self.data:
+        if "qr_text" in self.data:
             self.qr()
         if file:
             self.img(file)
@@ -135,7 +136,7 @@ class Label:
 
     def img(self, img):
         img = Image.open(img)
-        logger.debug('Generating label from image.')
+        logger.debug("Generating label from image.")
         logger.debug(f"Data: {self.data}")
         logger.debug(f"Image: {img}")
         logger.debug(f"Image size: {img.size}")
@@ -169,21 +170,19 @@ class Label:
         self.image.paste(img, (0, 0))
 
     def qr(self):
-        logger.debug('Generating QR-CODE: {}'.format(self.data['qr_text']))
+        logger.debug("Generating QR-CODE: {}".format(self.data["qr_text"]))
 
         # TODO: more options on qr-code (plaintext content, box size, etc)
-        if 'error_correction' in self.data:
-            error_correction = self.data['error_correction']
+        if "error_correction" in self.data:
+            error_correction = self.data["error_correction"]
         else:
             error_correction = 0
 
-        qr = qrcode.QRCode(version=1,
-                           error_correction=error_correction,
-                           box_size=10,
-                           border=1
-                          )
+        qr = qrcode.QRCode(
+            version=1, error_correction=error_correction, box_size=10, border=1
+        )
 
-        qr.add_data(self.data['qr_text'])
+        qr.add_data(self.data["qr_text"])
         qr.make()
         qrimage = qr.make_image(fill_color="black", back_color="white").get_image()
         qrsize = self.scale(qrimage.size)
@@ -214,12 +213,12 @@ class Label:
 
         pastex: int = 0
         pastey: int = 0
-        if self.data['qr_align'] == 'center':
+        if self.data["qr_align"] == "center":
             pastex = int((x - qrsize[0]) / 2)
-        elif self.data['qr_align'] == 'right':
+        elif self.data["qr_align"] == "right":
             pastex = int(x - qrsize[0])
         self.image.paste(qrimage, (pastex, pastey))
-        #self.label.text((0, 0), self.data['qr_text'], 0)
+        # self.label.text((0, 0), self.data['qr_text'], 0)
 
     def text(self):
         bbox = self.label.multiline_textbbox(
@@ -240,19 +239,19 @@ class Label:
         self.label = ImageDraw.Draw(self.image)
 
         # horizontal alignment
-        if self.data['halign'] == "center":
-            x = int(self.width/2) - int(x / 2)
-        elif self.data['halign'] == "left":
+        if self.data["halign"] == "center":
+            x = int(self.width / 2) - int(x / 2)
+        elif self.data["halign"] == "left":
             x = self.margin_left
-        elif self.data['halign'] == "right":
+        elif self.data["halign"] == "right":
             x = self.width - (x + self.margin_right)
 
         # vertical alignment
-        if self.data['valign'] == "middle":
+        if self.data["valign"] == "middle":
             y = int(self.height / 2) - int(y / 2)
-        elif self.data['valign'] == "top":
+        elif self.data["valign"] == "top":
             y = 0 + self.margin_top
-        elif self.data['valign'] == "bottom":
+        elif self.data["valign"] == "bottom":
             y = self.height - (y + self.margin_bottom)
         self.label.multiline_text(
             (x, y),
@@ -271,7 +270,7 @@ class Label:
         if self.label_type.form_factor == FormFactor.ENDLESS:
             rot = 0 if not self.rotated else 90
         else:
-            rot = 'auto'
+            rot = "auto"
 
         model = cast(Model | None, ModelsManager().get(config.printer.model))
         if model is None:
@@ -279,9 +278,9 @@ class Label:
 
         qlr = BrotherQLRaster(model.identifier)
         if model.cutting:
-            logger.debug('Printer is capable of automatic cutting.')
+            logger.debug("Printer is capable of automatic cutting.")
         else:
-            logger.debug('Printer is not capable of automatic cutting.')
+            logger.debug("Printer is not capable of automatic cutting.")
         create_label(
             qlr,
             self.image,
@@ -306,4 +305,3 @@ class Label:
             logger.warning(e, exc_info=True)
             raise
             return "danger", "unable to print"
-

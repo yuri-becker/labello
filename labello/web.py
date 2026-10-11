@@ -4,10 +4,10 @@ from typing import cast
 from brother_ql.labels import LabelsManager
 from flask import render_template, request, send_from_directory
 
-from app.config import config
-from app.fonts import fonts
-from app.label import Label
-from app.request import Request
+from labello.config import config
+from labello.fonts import fonts
+from labello.label import Label
+from labello.request import Request
 
 from . import app
 

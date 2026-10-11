@@ -81,10 +81,8 @@ class Config:
         self.website = Website(**dict.get("website", {}))
 
     def _default_config_path(self):
-        path = os.path.dirname(os.path.abspath(__file__)).split(os.path.sep)[:-1]
-        path.append("config.local.yaml")
-        path = os.path.sep.join(path)
-        return path
+        path = os.path.dirname(os.path.abspath(__file__))
+        return os.path.join(path, "config.local.yaml")
 
 
 config = Config()

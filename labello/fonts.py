@@ -2,13 +2,14 @@ import subprocess
 import sys
 from typing import TypedDict
 
-from app.config import Config, config
-from app.logger import logger
+from labello.config import Config, config
+from labello.logger import logger
 
 
 class Font(TypedDict):
     path: str
     styles: list[str]
+
 
 class Fonts:
     _fonts: dict[str, Font]

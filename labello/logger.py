@@ -1,6 +1,6 @@
 import logging
 
-from app.config import config
+from labello.config import config
 
 logger = logging.getLogger("labello")
 logger.setLevel(config.logging.level)
