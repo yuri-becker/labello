@@ -3,7 +3,6 @@ import sys
 
 from brother_ql.backends import guess_backend
 from flask import Flask
-from flask_bootstrap import Bootstrap
 
 from labello.config import config
 from labello.logger import logger
@@ -12,19 +11,15 @@ from labello.logger import logger
 app = Flask(__name__)
 app.config.update(
     DEBUG=config.logging.level == 10,
-    BOOTSTRAP_SERVE_LOCAL=config.website.bootstrap_local,
     DEFAULT_PARSERS=[
-        "flask.ext.api.parsers.JSONParser",
         "flask.ext.api.parsers.URLEncodedParser",
         "flask.ext.api.parsers.MultiPartParser",
     ],
 )
 
-node_path = os.path.dirname(os.path.abspath(__file__)).split(os.path.sep)[:-1]
-node_path.append("node_modules")
-app.config["node_path"] = os.path.sep.join(node_path)
+node_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "node_modules")
+app.config["node_path"] = node_path
 
-bootstrap = Bootstrap(app)
 try:
     backend = guess_backend(config.printer.device)
     logger.info(f"Using Backend {backend}")

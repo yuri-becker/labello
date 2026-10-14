@@ -1,6 +1,4 @@
 {% extends "base.jinja2" %}
-{% block title %}{{ website['title'] }}{% endblock %}
-
 
 {% block container %}
     <div class="row" style="margin-top: 10px;">
@@ -245,11 +243,9 @@
             </div>
         </div>
     </div>
-{% endblock %}
 
-{% block scripts %}
-    {{ super() }}
     <script>
         {% include "main.js" %}
     </script>
 {% endblock %}
+

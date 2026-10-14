@@ -34,7 +34,7 @@ def error_404(e):
 
 @app.route("/node_modules/<path:filename>", methods=["GET"])
 def node_module(filename):
-    logger.debug(filename)
+    logger.debug(f"Looking for {filename} in {app.config['node_path']}")
     return send_from_directory(app.config["node_path"], filename)
 
 

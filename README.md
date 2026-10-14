@@ -31,7 +31,6 @@ There are some settings to alter the behavior and appearance of labello. In case
 | LAB_WEBSITE_HTML_TITLE | labello - print all your labels | HTML \<title\> |
 | LAB_WEBSITE_TITLE | labello | main title in website |
 | LAB_WEBSITE_SLUG | print all your labels | Slogan below title |
-| LAB_WEBSITE_BOOTSTRAP_LOCAL | true | load bootstrap from local server (true) or from cdn (false) |
 | LAB_LABEL_MARGIN_TOP | 24 | label top margin |
 | LAB_LABEL_MARGIN_BOTTOM | 24 | label bottom margin |
 | LAB_LABEL_MARGIN_LEFT | 24 | label left margin |

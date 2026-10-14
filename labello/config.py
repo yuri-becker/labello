@@ -47,8 +47,6 @@ class Website:
     html_title: str = "labello - label printer"
     title: str = "labello"
     slug: str = "print all your labels"
-    bootstrap_local: bool = True
-    """Whether labello should serve bootstrap itself (true) or from Bootstrap's CDN (false)."""
 
 
 class Config:

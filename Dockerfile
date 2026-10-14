@@ -32,7 +32,6 @@ ENV LAB_SERVER_PORT=4242 \
     LAB_WEBSITE_HTML_TITLE="labello - print all your labels" \
     LAB_WEBSITE_TITLE="labello" \
     LAB_WEBSITE_SLUG="print all your labels" \
-    LAB_WEBSITE_BOOTSTRAP_LOCAL=True \
     LAB_LABEL_MARGIN_TOP=24 \
     LAB_LABEL_MARGIN_BOTTOM=24 \
     LAB_LABEL_MARGIN_LEFT=24 \

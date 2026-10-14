@@ -10,7 +10,6 @@ website:
   html_title: $LAB_WEBSITE_HTML_TITLE
   title: $LAB_WEBSITE_TITLE
   slug: $LAB_WEBSITE_SLUG
-  bootstrap_local: $LAB_WEBSITE_BOOTSTRAP_LOCAL
 
 label:
   margins:
